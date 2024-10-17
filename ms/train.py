@@ -11,7 +11,7 @@ from gaussian_renderer import network_gui
 from gaussian_renderer import render_imp, render_depth
 import sys
 from scene import Scene, GaussianModel
-from utils.general_utils import safe_state
+from utils.general_utils import get_top_k_indices, safe_state
 import uuid
 from tqdm import tqdm
 from utils.image_utils import psnr
@@ -160,7 +160,7 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
 
                     exceeds_max = area_max>(image.shape[1]*image.shape[2]/5000)
                     largest_mask = torch.zeros_like(exceeds_max)
-                    v, index_largest = torch.topk(area_max, n_blur)
+                    v, index_largest = get_top_k_indices(area_max, n_blur)
                     largest_mask[index_largest] = True
                     mask_blur = torch.logical_or(mask_blur, torch.logical_and(exceeds_max, largest_mask))
                     n_grad = diff_cap - mask_blur.sum()
