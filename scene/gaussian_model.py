@@ -11,7 +11,7 @@
 
 import torch
 import numpy as np
-from utils.general_utils import inverse_sigmoid, get_expon_lr_func, build_rotation
+from utils.general_utils import get_top_k_indices, inverse_sigmoid, get_expon_lr_func, build_rotation
 from torch import nn
 import os
 from utils.system_utils import mkdir_p
@@ -417,7 +417,7 @@ class GaussianModel:
             print(grads.shape)
             print(torch.norm(grads, dim=-1).shape)
             print(n_grad)
-            v, top_grads_index = torch.topk(torch.norm(grads, dim=-1), n_grad)
+            top_grads_index = get_top_k_indices(torch.norm(grads, dim=-1), n_grad)
             mask_top = torch.zeros_like(torch.norm(grads, dim=-1), dtype=torch.bool)
             mask_top[top_grads_index] = True
         else:
