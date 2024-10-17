@@ -414,7 +414,7 @@ class GaussianModel:
         grads[grads.isnan()] = 0.0
 
         if n_grad is not None:
-            top_grads_index = get_top_k_indices(grads.squeeze(), n_grad)
+            v, top_grads_index = get_top_k_indices(grads.squeeze(), n_grad)
             mask_top = torch.zeros_like(grads.squeeze(), dtype=torch.bool)
             mask_top[top_grads_index] = True
         else:
