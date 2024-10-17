@@ -218,7 +218,7 @@ def readCamerasFromTransforms(path, transformsfile, white_background, extension=
             
     return cam_infos
 
-def readNerfSyntheticInfo(path, white_background, eval, extension=".png"):
+def readNerfSyntheticInfo(path, n_start_gaussians, white_background, eval, extension=".png"):
     print("Reading Training Transforms")
     train_cam_infos = readCamerasFromTransforms(path, "transforms_train.json", white_background, extension)
     print("Reading Test Transforms")
@@ -233,7 +233,7 @@ def readNerfSyntheticInfo(path, white_background, eval, extension=".png"):
     ply_path = os.path.join(path, "points3d.ply")
     if not os.path.exists(ply_path):
         # Since this data set has no colmap data, we start with random points
-        num_pts = 10_000
+        num_pts = 100_000
         print(f"Generating random point cloud ({num_pts})...")
         
         # We create random points inside the bounds of the synthetic Blender scenes
@@ -246,6 +246,13 @@ def readNerfSyntheticInfo(path, white_background, eval, extension=".png"):
         pcd = fetchPly(ply_path)
     except:
         pcd = None
+
+    if n_start_gaussians is not None and pcd is not None:
+        print("Subsampling point cloud")
+        chosen_points = np.random.choice(pcd.points.shape[0], n_start_gaussians, replace=False)
+        pcd.points = pcd.points[chosen_points]
+        pcd.colors = pcd.colors[chosen_points]
+        pcd.normals = pcd.normals[chosen_points]
 
     scene_info = SceneInfo(point_cloud=pcd,
                            train_cameras=train_cam_infos,
