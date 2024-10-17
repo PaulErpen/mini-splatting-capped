@@ -414,8 +414,8 @@ class GaussianModel:
         grads[grads.isnan()] = 0.0
 
         if n_grad is not None:
-            v, top_grads_index = torch.topk(grads.squeeze(), n_grad)
-            mask_top = torch.zeros_like(grads.squeeze(), dtype=torch.bool)
+            v, top_grads_index = torch.topk(torch.norm(grads, dim=-1), n_grad)
+            mask_top = torch.zeros_like(torch.norm(grads, dim=-1), dtype=torch.bool)
             mask_top[top_grads_index] = True
         else:
             mask_top = torch.ones_like(grads.squeeze(), dtype=torch.bool)
