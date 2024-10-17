@@ -131,9 +131,3 @@ def safe_state(silent):
     np.random.seed(0)
     torch.manual_seed(0)
     torch.cuda.set_device(torch.device("cuda:0"))
-
-def get_top_k_indices(tensor, k):
-    if k > tensor.shape[-1]:
-        return torch.arange(tensor.shape[-1], device=tensor.device)
-    v, i = torch.topk(tensor, k, largest=True)
-    return i
