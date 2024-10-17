@@ -417,8 +417,8 @@ class GaussianModel:
             print(grads.shape)
             print(torch.norm(grads, dim=-1).shape)
             print(n_grad)
-            top_grads_index = get_top_k_indices(torch.norm(grads, dim=-1), n_grad)
-            mask_top = torch.zeros_like(torch.norm(grads, dim=-1), dtype=torch.bool)
+            top_grads_index = get_top_k_indices(grads.squeeze(), n_grad)
+            mask_top = torch.zeros_like(grads.squeeze(), dtype=torch.bool)
             mask_top[top_grads_index] = True
         else:
             mask_top = torch.ones_like(grads.squeeze(), dtype=torch.bool)
