@@ -409,11 +409,20 @@ class GaussianModel:
 
 
 
-    def densify_and_prune_split(self, max_grad, min_opacity, extent, max_screen_size, mask):
+    def densify_and_prune_split(self, max_grad, min_opacity, extent, max_screen_size, mask, n_grad=None):
         grads = self.xyz_gradient_accum / self.denom
         grads[grads.isnan()] = 0.0
 
-        self.densify_and_clone(grads, max_grad, extent)
+        if n_grad is not None:
+            v, top_grads_index = torch.topk(grads.squeeze(), n_grad)
+            mask_top = torch.zeros_like(grads.squeeze(), dtype=torch.bool)
+            mask_top[top_grads_index] = True
+        else:
+            mask_top = torch.ones_like(grads.squeeze(), dtype=torch.bool)
+
+        mask = torch.logical_and(mask, mask_top)
+
+        self.densify_and_clone_mask(grads, max_grad, extent, mask_top)
         self.densify_and_split_mask(grads, max_grad, extent, mask)
 
         prune_mask = (self.get_opacity < min_opacity).squeeze()
@@ -424,6 +433,26 @@ class GaussianModel:
         self.prune_points(prune_mask)
 
         torch.cuda.empty_cache()
+
+    def densify_and_clone_mask(self, grads, grad_threshold, scene_extent, mask):
+        # Extract points that satisfy the gradient condition
+        selected_pts_mask = torch.where(torch.norm(grads, dim=-1) >= grad_threshold, True, False)
+        selected_pts_mask = torch.logical_and(selected_pts_mask,
+                                              torch.max(self.get_scaling, dim=1).values <= self.percent_dense*scene_extent)
+        
+        n_init_points = self.get_xyz.shape[0]
+        padded_mask = torch.zeros((n_init_points), dtype=torch.bool, device='cuda')
+        padded_mask[:grads.shape[0]] = mask
+        selected_pts_mask = torch.logical_or(selected_pts_mask, padded_mask)
+        
+        new_xyz = self._xyz[selected_pts_mask]
+        new_features_dc = self._features_dc[selected_pts_mask]
+        new_features_rest = self._features_rest[selected_pts_mask]
+        new_opacities = self._opacity[selected_pts_mask]
+        new_scaling = self._scaling[selected_pts_mask]
+        new_rotation = self._rotation[selected_pts_mask]
+
+        self.densification_postfix(new_xyz, new_features_dc, new_features_rest, new_opacities, new_scaling, new_rotation)
 
 
     def densify_and_split_mask(self, grads, grad_threshold, scene_extent, mask, N=2):

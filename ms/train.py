@@ -148,7 +148,26 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                 gaussians.add_densification_stats(viewspace_point_tensor, visibility_filter)
 
                 area_max = render_pkg["area_max"]
-                mask_blur = torch.logical_or(mask_blur, area_max>(image.shape[1]*image.shape[2]/5000))
+                n_current = gaussians._xyz.shape[0]
+                n_grad = None
+
+                if args.max_cap is not None:
+                    diff_cap = args.max_cap - n_current
+
+                    assert diff_cap >= 0, "Difference to cap is negative"
+
+                    n_blur = int(diff_cap * args.lambda_diff)
+
+                    exceeds_max = area_max>(image.shape[1]*image.shape[2]/5000)
+                    largest_mask = torch.zeros_like(exceeds_max)
+                    v, index_largest = torch.topk(area_max, n_blur)
+                    largest_mask[index_largest] = True
+                    mask_blur = torch.logical_or(mask_blur, torch.logical_and(exceeds_max, largest_mask))
+                    n_grad = diff_cap - mask_blur.sum()
+
+                    assert n_grad + n_blur == diff_cap, "Newly alloted points do not match cap"
+                else:
+                    mask_blur = torch.logical_or(mask_blur, area_max>(image.shape[1]*image.shape[2]/5000))
 
                 if iteration > opt.densify_from_iter and iteration % opt.densification_interval == 0 and iteration % 5000!=0 and gaussians._xyz.shape[0]<args.num_max:  
                 
@@ -157,8 +176,10 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
 
                     gaussians.densify_and_prune_split(opt.densify_grad_threshold, 
                                                     0.005, scene.cameras_extent, 
-                                                    size_threshold, mask_blur)
+                                                    size_threshold, mask_blur, n_grad)
                     mask_blur = torch.zeros(gaussians._xyz.shape[0], device='cuda')
+
+                    assert gaussians._xyz.shape[0] <= args.num_max, "Number of splats exceeds cap"
                     
                     
                 if iteration%5000==0:
@@ -408,7 +429,8 @@ if __name__ == "__main__":
 
     parser.add_argument("--imp_metric", required=True, type=str, default = None)
 
-
+    parser.add_argument("--max_cap", type=int, default = None, help="Maximum number of splats in the scene")
+    parser.add_argument("--lambda_diff", type=float, default=0.5, help="Weighting the contribution for blur-split and gradient based densification when running into the cap")
 
     args = parser.parse_args(sys.argv[1:])
     args.save_iterations.append(args.iterations)
