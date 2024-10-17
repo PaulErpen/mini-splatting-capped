@@ -160,7 +160,7 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
 
                     exceeds_max = area_max>(image.shape[1]*image.shape[2]/5000)
                     largest_mask = torch.zeros_like(exceeds_max)
-                    v, index_largest = get_top_k_indices(area_max, n_blur)
+                    index_largest = get_top_k_indices(area_max, n_blur)
                     largest_mask[index_largest] = True
                     mask_blur = torch.logical_or(mask_blur, torch.logical_and(exceeds_max, largest_mask))
                     n_grad = diff_cap - mask_blur.sum()
