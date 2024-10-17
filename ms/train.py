@@ -151,8 +151,8 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                 n_current = gaussians._xyz.shape[0]
                 n_grad = None
 
-                if args.max_cap is not None:
-                    diff_cap = args.max_cap - n_current
+                if args.num_max is not None:
+                    diff_cap = args.num_max - n_current
 
                     assert diff_cap >= 0, "Difference to cap is negative"
 
@@ -169,7 +169,10 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                 else:
                     mask_blur = torch.logical_or(mask_blur, area_max>(image.shape[1]*image.shape[2]/5000))
 
-                if iteration > opt.densify_from_iter and iteration % opt.densification_interval == 0 and iteration % 5000!=0 and gaussians._xyz.shape[0]<args.num_max:  
+                if (iteration > opt.densify_from_iter 
+                    and iteration % opt.densification_interval == 0 
+                    and iteration % 5000!=0 
+                    and (args.num_max is None or gaussians._xyz.shape[0]<args.num_max)):  
                 
                     size_threshold = 20 if iteration > opt.opacity_reset_interval else None
 
@@ -424,12 +427,11 @@ if __name__ == "__main__":
     parser.add_argument("--simp_iteration1", type=int, default = 15_000)
     parser.add_argument("--simp_iteration2", type=int, default = 20_000)
     parser.add_argument("--num_depth", type=int, default = 3_500_000)
-    parser.add_argument("--num_max", type=int, default = 4_500_000)
     parser.add_argument("--sampling_factor", type=float, default = 0.5)
 
     parser.add_argument("--imp_metric", required=True, type=str, default = None)
 
-    parser.add_argument("--max_cap", type=int, default = None, help="Maximum number of splats in the scene")
+    parser.add_argument("--num_max", type=int, default = None, help="Maximum number of splats in the scene")
     parser.add_argument("--lambda_diff", type=float, default=0.5, help="Weighting the contribution for blur-split and gradient based densification when running into the cap")
 
     args = parser.parse_args(sys.argv[1:])
