@@ -73,6 +73,7 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
     first_iter += 1
 
     mask_blur = torch.zeros(gaussians._xyz.shape[0], device='cuda')
+    area_max_acum = torch.zeros(gaussians._xyz.shape[0], device='cuda')
     
     for iteration in range(first_iter, opt.iterations + 1):        
         if network_gui.conn == None:
@@ -148,33 +149,35 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                 gaussians.add_densification_stats(viewspace_point_tensor, visibility_filter)
 
                 area_max = render_pkg["area_max"]
-                n_current = gaussians._xyz.shape[0]
-                n_grad = None
-
-                if args.num_max is not None:
-                    diff_cap = args.num_max - n_current
-
-                    assert diff_cap >= 0, "Difference to cap is negative"
-
-                    n_blur = int(diff_cap * args.lambda_diff)
-
-                    exceeds_max = area_max>(image.shape[1]*image.shape[2]/5000)
-                    largest_mask = torch.zeros_like(exceeds_max)
-                    v, index_largest = torch.topk(area_max, n_blur)
-                    largest_mask[index_largest] = True
-                    mask_blur = torch.logical_or(mask_blur, torch.logical_and(exceeds_max, largest_mask))
-                    n_grad = diff_cap - mask_blur.sum()
-
-                    assert n_grad + mask_blur.sum() == diff_cap, f"Newly alloted points do not match cap {n_grad} - {mask_blur.sum()} != {diff_cap}"
-                    assert n_grad >= 0, f"Negative number of gradient points {n_grad}"
-                    assert mask_blur.sum() >= 0, f"Negative number of blur points {mask_blur.sum()}"
-                else:
-                    mask_blur = torch.logical_or(mask_blur, area_max>(image.shape[1]*image.shape[2]/5000))
+                exceeds_max = area_max > (image.shape[1]*image.shape[2]/5000)
+                area_max_acum[exceeds_max] = area_max_acum[exceeds_max] + area_max[exceeds_max]
 
                 if (iteration > opt.densify_from_iter 
                     and iteration % opt.densification_interval == 0 
                     and iteration % 5000!=0 
                     and (args.num_max is None or gaussians._xyz.shape[0]<args.num_max)):  
+
+                    n_current = gaussians._xyz.shape[0]
+                    n_grad = None
+
+                    if args.num_max is not None:
+                        diff_cap = args.num_max - n_current
+
+                        assert diff_cap >= 0, "Difference to cap is negative"
+
+                        n_blur = int(diff_cap * args.lambda_diff)
+
+                        largest_mask = torch.zeros_like(area_max_acum)
+                        v, index_largest = torch.topk(area_max_acum, n_blur)
+                        largest_mask[index_largest] = True
+                        mask_blur = torch.logical_or(mask_blur, torch.logical_and(largest_mask, area_max_acum != 0))
+                        n_grad = diff_cap - mask_blur.sum()
+
+                        assert n_grad + mask_blur.sum() == diff_cap, f"Newly alloted points do not match cap {n_grad} - {mask_blur.sum()} != {diff_cap}"
+                        assert n_grad >= 0, f"Negative number of gradient points {n_grad}"
+                        assert mask_blur.sum() >= 0, f"Negative number of blur points {mask_blur.sum()}"
+                    else:
+                        mask_blur = torch.logical_or(mask_blur, area_max>(image.shape[1]*image.shape[2]/5000))
                 
                     size_threshold = 20 if iteration > opt.opacity_reset_interval else None
 
@@ -183,6 +186,7 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                                                     0.005, scene.cameras_extent, 
                                                     size_threshold, mask_blur, n_grad)
                     mask_blur = torch.zeros(gaussians._xyz.shape[0], device='cuda')
+                    area_max_acum = torch.zeros(gaussians._xyz.shape[0], device='cuda')
 
                     assert gaussians._xyz.shape[0] <= args.num_max, "Number of splats exceeds cap"
                     
