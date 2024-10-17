@@ -165,7 +165,7 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                     mask_blur = torch.logical_or(mask_blur, torch.logical_and(exceeds_max, largest_mask))
                     n_grad = diff_cap - mask_blur.sum()
 
-                    assert n_grad + n_blur == diff_cap, "Newly alloted points do not match cap"
+                    assert n_grad + mask_blur.sum() == diff_cap, "Newly alloted points do not match cap"
                 else:
                     mask_blur = torch.logical_or(mask_blur, area_max>(image.shape[1]*image.shape[2]/5000))
 
