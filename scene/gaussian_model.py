@@ -428,6 +428,8 @@ class GaussianModel:
         self.densify_and_clone_mask(grads, max_grad, extent, mask_top)
         self.densify_and_split_mask(grads, max_grad, extent, mask)
 
+        assert self.get_xyz.shape[0] <= grads.shape[0] + n_grad + mask.sum(), f"Densification exceeds maximum number of points {self.get_xyz.shape[0]} > {grads.shape[0]} + {n_grad} + {mask.sum()}"
+
         prune_mask = (self.get_opacity < min_opacity).squeeze()
         if max_screen_size:
             big_points_vs = self.max_radii2D > max_screen_size

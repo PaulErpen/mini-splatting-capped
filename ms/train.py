@@ -188,7 +188,7 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                     mask_blur = torch.zeros(gaussians._xyz.shape[0], device='cuda')
                     area_max_acum = torch.zeros(gaussians._xyz.shape[0], device='cuda')
 
-                    assert gaussians._xyz.shape[0] <= args.num_max, "Number of splats exceeds cap"
+                    assert gaussians._xyz.shape[0] <= args.num_max, f"Number of splats exceeds cap {gaussians._xyz.shape[0]} > {args.num_max}"
                     
                     
                 if iteration%5000==0:
