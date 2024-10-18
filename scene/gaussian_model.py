@@ -423,12 +423,10 @@ class GaussianModel:
         else:
             mask_top = torch.ones_like(grads.squeeze(), dtype=torch.bool)
 
-        mask = torch.logical_and(mask, mask_top)
-
         self.densify_and_clone_mask(grads, max_grad, extent, mask_top)
-        self.densify_and_split_mask(grads, max_grad, extent, mask)
+        self.densify_and_split_mask(grads, max_grad, extent, mask, mask_top)
 
-        assert self.get_xyz.shape[0] <= grads.shape[0] + n_grad + mask.sum(), f"Densification exceeds maximum number of points {self.get_xyz.shape[0]} > {grads.shape[0]} + {n_grad} + {mask.sum()}"
+        assert self.get_xyz.shape[0] <= grads.shape[0] + mask_top.sum() + mask.sum(), f"Densification exceeds maximum number of points {self.get_xyz.shape[0]} > {grads.shape[0]} + {mask_top.sum()} + {mask.sum()}"
 
         prune_mask = (self.get_opacity < min_opacity).squeeze()
         if max_screen_size:
@@ -460,14 +458,15 @@ class GaussianModel:
         self.densification_postfix(new_xyz, new_features_dc, new_features_rest, new_opacities, new_scaling, new_rotation)
 
 
-    def densify_and_split_mask(self, grads, grad_threshold, scene_extent, mask, N=2):
+    def densify_and_split_mask(self, grads, grad_threshold, scene_extent, mask, mask_top, N=2):
         n_init_points = self.get_xyz.shape[0]
         # Extract points that satisfy the gradient condition
         padded_grad = torch.zeros((n_init_points), device="cuda")
-        padded_grad[:grads.shape[0]] = torch.norm(grads, dim=-1)
+        padded_grad[:grads.shape[0]] = grads.squeeze()
         selected_pts_mask = torch.where(padded_grad >= grad_threshold, True, False)
         selected_pts_mask = torch.logical_and(selected_pts_mask,
                                               torch.max(self.get_scaling, dim=1).values > self.percent_dense*scene_extent)
+        selected_pts_mask = torch.logical_and(selected_pts_mask, mask_top)
 
         padded_mask = torch.zeros((n_init_points), dtype=torch.bool, device='cuda')
         padded_mask[:grads.shape[0]] = mask
