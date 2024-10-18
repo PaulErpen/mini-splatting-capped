@@ -233,6 +233,7 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                     gaussians.reinitial_pts(out_pts_merged, gt_merged)
                     gaussians.training_setup(opt)
                     mask_blur = torch.zeros(gaussians._xyz.shape[0], device='cuda')
+                    area_max_acum = torch.zeros(gaussians._xyz.shape[0], device='cuda')
                     torch.cuda.empty_cache()
                     viewpoint_stack = scene.getTrainCameras().copy()
 
