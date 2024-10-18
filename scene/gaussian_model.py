@@ -447,6 +447,8 @@ class GaussianModel:
         padded_mask = torch.zeros((n_init_points), dtype=torch.bool, device='cuda')
         padded_mask[:grads.shape[0]] = mask
         selected_pts_mask = torch.logical_or(selected_pts_mask, padded_mask)
+
+        print(f"Number of points to clone : {selected_pts_mask.sum()}")
         
         new_xyz = self._xyz[selected_pts_mask]
         new_features_dc = self._features_dc[selected_pts_mask]
@@ -473,7 +475,8 @@ class GaussianModel:
         padded_mask = torch.zeros((n_init_points), dtype=torch.bool, device='cuda')
         padded_mask[:grads.shape[0]] = mask
         selected_pts_mask = torch.logical_or(selected_pts_mask, padded_mask)
-        
+
+        print(f"Number of points to split : {selected_pts_mask.sum()}")
 
         stds = self.get_scaling[selected_pts_mask].repeat(N,1)
         means = torch.zeros((stds.size(0), 3),device="cuda")
