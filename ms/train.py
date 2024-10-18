@@ -272,6 +272,7 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                                            p=prob, replace=False)
     
                 mask = np.zeros(N_xyz, dtype=bool)
+                area_max_acum = torch.zeros(N_xyz, device='cuda')
                 mask[indices] = True
 
 
@@ -314,7 +315,8 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                                 
                 gaussians.prune_points(non_prune_mask==False)
                 gaussians.training_setup(opt)
-                torch.cuda.empty_cache()   
+                torch.cuda.empty_cache()
+                area_max_acum = torch.zeros(gaussians._xyz.shape[0], device='cuda')
 
                 
 
