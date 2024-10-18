@@ -170,7 +170,7 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                         largest_mask = torch.zeros_like(area_max_acum)
                         index_largest = get_top_k_indices(area_max_acum, n_blur)
                         largest_mask[index_largest] = True
-                        mask_blur = torch.logical_or(mask_blur, torch.logical_and(largest_mask, area_max_acum != 0))
+                        mask_blur = torch.logical_and(largest_mask, area_max_acum != 0)
                         n_grad = diff_cap - mask_blur.sum()
 
                         assert n_grad + mask_blur.sum() == diff_cap, f"Newly alloted points do not match cap {n_grad} - {mask_blur.sum()} != {diff_cap}"
