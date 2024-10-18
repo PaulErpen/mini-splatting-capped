@@ -191,8 +191,8 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                     assert gaussians._xyz.shape[0] <= args.num_max, f"Number of splats exceeds cap {gaussians._xyz.shape[0]} > {args.num_max}"
                     
                     
-                if iteration%args.reprojection_interval==0:
-
+                if (iteration%args.reprojection_interval==0 
+                    and args.reproject_until_iter is None or iteration<args.reproject_until_iter):
                     
                     out_pts_list=[]
                     gt_list=[]
@@ -443,6 +443,7 @@ if __name__ == "__main__":
     parser.add_argument("--num_max", type=int, default = None, help="Maximum number of splats in the scene")
     parser.add_argument("--lambda_diff", type=float, default=0.5, help="Weighting the contribution for blur-split and gradient based densification when running into the cap")
     parser.add_argument("--reprojection_interval", type=int, default=5000, help="Interval for depth reprojection of the scene")
+    parser.add_argument("--reproject_until_iter", type=int, default=None, help="The iteration until which the depth reprojection is performed")
 
     args = parser.parse_args(sys.argv[1:])
     args.save_iterations.append(args.iterations)
