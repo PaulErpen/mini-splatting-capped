@@ -192,7 +192,7 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                     
                     
                 if (iteration%args.reprojection_interval==0 
-                    and args.reproject_until_iter is None or iteration<args.reproject_until_iter):
+                    and (args.reproject_until_iter is None or iteration<args.reproject_until_iter)):
                     
                     out_pts_list=[]
                     gt_list=[]
