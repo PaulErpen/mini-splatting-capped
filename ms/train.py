@@ -52,8 +52,9 @@ def init_cdf_mask(importance, thres=1.0):
 def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoint_iterations, checkpoint, debug_from, args):
     first_iter = 0
     tb_writer = prepare_output_and_logger(dataset)
+    log_string = ""
 
-    gaussians = GaussianModel(sh_degree=0)
+    gaussians = GaussianModel(sh_degree=0, log_string=log_string)
 
     scene = Scene(dataset, gaussians)
     gaussians.training_setup(opt)
@@ -75,7 +76,8 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
     mask_blur = torch.zeros(gaussians._xyz.shape[0], device='cuda')
     area_max_acum = torch.zeros(gaussians._xyz.shape[0], device='cuda')
     
-    for iteration in range(first_iter, opt.iterations + 1):        
+    for iteration in range(first_iter, opt.iterations + 1):       
+        log_string += f"Iteration: {iteration}\n"
         if network_gui.conn == None:
             network_gui.try_connect()
         while network_gui.conn != None:
@@ -327,7 +329,11 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
 
             if (iteration in checkpoint_iterations):
                 print("\n[ITER {}] Saving Checkpoint".format(iteration))
-                torch.save((gaussians.capture(), iteration), scene.model_path + "/chkpnt" + str(iteration) + ".pth")  
+                torch.save((gaussians.capture(), iteration), scene.model_path + "/chkpnt" + str(iteration) + ".pth")
+
+            # dump the log string
+            with open(scene.model_path + "/log.txt", "w") as log_file:
+                log_file.write(log_string)
 
     print(gaussians._xyz.shape)
 

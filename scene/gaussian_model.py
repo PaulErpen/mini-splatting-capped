@@ -41,7 +41,7 @@ class GaussianModel:
         self.rotation_activation = torch.nn.functional.normalize
 
 
-    def __init__(self, sh_degree : int):
+    def __init__(self, sh_degree : int, log_string: str = ""):
         self.active_sh_degree = 0
         self.max_sh_degree = sh_degree  
         self._xyz = torch.empty(0)
@@ -56,6 +56,7 @@ class GaussianModel:
         self.optimizer = None
         self.percent_dense = 0
         self.spatial_lr_scale = 0
+        self.log_string = log_string
         self.setup_functions()
 
     def capture(self):
@@ -129,7 +130,7 @@ class GaussianModel:
         features[:, :3, 0 ] = fused_color
         features[:, 3:, 1:] = 0.0
 
-        print("Number of points at initialisation : ", fused_point_cloud.shape[0])
+        self.log_string += f"Number of points at initialization : {fused_point_cloud.shape[0]}\n"
 
         dist2 = torch.clamp_min(distCUDA2(torch.from_numpy(np.asarray(pcd.points)).float().cuda()), 0.0000001)
         scales = torch.log(torch.sqrt(dist2))[...,None].repeat(1, 3)
@@ -304,6 +305,8 @@ class GaussianModel:
         self.denom = self.denom[valid_points_mask]
         self.max_radii2D = self.max_radii2D[valid_points_mask]
 
+        self.log_string += f"Number of points after pruning : {self.get_xyz.shape[0]}\n"
+
     def cat_tensors_to_optimizer(self, tensors_dict):
         optimizable_tensors = {}
         for group in self.optimizer.param_groups:
@@ -414,9 +417,6 @@ class GaussianModel:
         grads[grads.isnan()] = 0.0
 
         if n_grad is not None:
-            print(grads.shape)
-            print(torch.norm(grads, dim=-1).shape)
-            print(n_grad)
             top_grads_index = get_top_k_indices(torch.norm(grads, dim=-1), n_grad)
             mask_top = torch.zeros_like(torch.norm(grads, dim=-1), dtype=torch.bool)
             mask_top[top_grads_index] = True
@@ -437,6 +437,8 @@ class GaussianModel:
 
         torch.cuda.empty_cache()
 
+        self.log_string += f"Number of points after densification : {self.get_xyz.shape[0]}\n"
+
     def densify_and_clone_mask(self, grads, grad_threshold, scene_extent, mask):
         # Extract points that satisfy the gradient condition
         selected_pts_mask = torch.where(torch.norm(grads, dim=-1) >= grad_threshold, True, False)
@@ -448,7 +450,7 @@ class GaussianModel:
         padded_mask[:grads.shape[0]] = mask
         selected_pts_mask = torch.logical_and(selected_pts_mask, padded_mask)
 
-        print(f"Number of points to clone : {selected_pts_mask.sum()}")
+        self.log_string += f"Number of points to clone : {selected_pts_mask.sum()}"
         
         new_xyz = self._xyz[selected_pts_mask]
         new_features_dc = self._features_dc[selected_pts_mask]
@@ -475,9 +477,8 @@ class GaussianModel:
         padded_mask = torch.zeros((n_init_points), dtype=torch.bool, device='cuda')
         padded_mask[:grads.shape[0]] = mask
 
-        print(f"Number of points to blur-split : {padded_mask.sum()}")
-        print(f"Number of points to normally split : {selected_pts_mask.sum()}")
-
+        self.log_string += f"Number of points to blur-split : {padded_mask.sum()}"
+        self.log_string += f"Number of points to normally split : {selected_pts_mask.sum()}"
 
         selected_pts_mask = torch.logical_or(selected_pts_mask, padded_mask)
 
