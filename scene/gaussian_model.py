@@ -466,7 +466,9 @@ class GaussianModel:
         selected_pts_mask = torch.where(padded_grad >= grad_threshold, True, False)
         selected_pts_mask = torch.logical_and(selected_pts_mask,
                                               torch.max(self.get_scaling, dim=1).values > self.percent_dense*scene_extent)
-        selected_pts_mask = torch.logical_and(selected_pts_mask, mask_top)
+        padded_mask_top = torch.zeros((n_init_points), dtype=torch.bool, device='cuda')
+        padded_mask_top[:mask_top.shape[0]] = mask_top
+        selected_pts_mask = torch.logical_and(selected_pts_mask, padded_mask_top)
 
         padded_mask = torch.zeros((n_init_points), dtype=torch.bool, device='cuda')
         padded_mask[:grads.shape[0]] = mask
