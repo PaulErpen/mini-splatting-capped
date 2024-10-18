@@ -415,10 +415,10 @@ class GaussianModel:
 
         if n_grad is not None:
             print(grads.shape)
-            print(torch.norm(grads, dim=-1).shape)
+            print(torch.max(self.get_scaling, dim=1).values.shape)
             print(n_grad)
-            top_grads_index = get_top_k_indices(torch.norm(grads, dim=-1), n_grad)
-            mask_top = torch.zeros_like(torch.norm(grads, dim=-1), dtype=torch.bool)
+            top_grads_index = get_top_k_indices(torch.max(self.get_scaling, dim=1).values, n_grad)
+            mask_top = torch.zeros_like(torch.max(self.get_scaling, dim=1).values, dtype=torch.bool)
             mask_top[top_grads_index] = True
         else:
             mask_top = torch.ones_like(grads.squeeze(), dtype=torch.bool)
@@ -474,9 +474,12 @@ class GaussianModel:
 
         padded_mask = torch.zeros((n_init_points), dtype=torch.bool, device='cuda')
         padded_mask[:grads.shape[0]] = mask
-        selected_pts_mask = torch.logical_or(selected_pts_mask, padded_mask)
 
-        print(f"Number of points to split : {selected_pts_mask.sum()}")
+        print(f"Number of points to blur-split : {padded_mask.sum()}")
+        print(f"Number of points to normally split : {selected_pts_mask.sum()}")
+
+
+        selected_pts_mask = torch.logical_or(selected_pts_mask, padded_mask)
 
         stds = self.get_scaling[selected_pts_mask].repeat(N,1)
         means = torch.zeros((stds.size(0), 3),device="cuda")
