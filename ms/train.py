@@ -52,9 +52,9 @@ def init_cdf_mask(importance, thres=1.0):
 def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoint_iterations, checkpoint, debug_from, args):
     first_iter = 0
     tb_writer = prepare_output_and_logger(dataset)
-    log_string = ""
+    log = []
 
-    gaussians = GaussianModel(sh_degree=0, log_string=log_string)
+    gaussians = GaussianModel(sh_degree=0, log=log)
 
     scene = Scene(dataset, gaussians)
     gaussians.training_setup(opt)
@@ -77,7 +77,7 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
     area_max_acum = torch.zeros(gaussians._xyz.shape[0], device='cuda')
     
     for iteration in range(first_iter, opt.iterations + 1):       
-        log_string += f"Iteration: {iteration}\n"
+        log.append(f"Iteration: {iteration}")
         if network_gui.conn == None:
             network_gui.try_connect()
         while network_gui.conn != None:
@@ -333,7 +333,7 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
 
             # dump the log string
             with open(scene.model_path + "/log.txt", "w") as log_file:
-                log_file.write(log_string)
+                log_file.write("\n".join(log))
 
     print(gaussians._xyz.shape)
 
