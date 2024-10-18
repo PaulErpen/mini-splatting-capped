@@ -415,10 +415,10 @@ class GaussianModel:
 
         if n_grad is not None:
             print(grads.shape)
-            print(torch.max(self.get_scaling, dim=1).values.shape)
+            print(torch.norm(grads, dim=-1).shape)
             print(n_grad)
-            top_grads_index = get_top_k_indices(torch.max(self.get_scaling, dim=1).values, n_grad)
-            mask_top = torch.zeros_like(torch.max(self.get_scaling, dim=1).values, dtype=torch.bool)
+            top_grads_index = get_top_k_indices(torch.norm(grads, dim=-1), n_grad)
+            mask_top = torch.zeros_like(torch.norm(grads, dim=-1), dtype=torch.bool)
             mask_top[top_grads_index] = True
         else:
             mask_top = torch.ones_like(grads.squeeze(), dtype=torch.bool)
@@ -446,7 +446,7 @@ class GaussianModel:
         n_init_points = self.get_xyz.shape[0]
         padded_mask = torch.zeros((n_init_points), dtype=torch.bool, device='cuda')
         padded_mask[:grads.shape[0]] = mask
-        selected_pts_mask = torch.logical_or(selected_pts_mask, padded_mask)
+        selected_pts_mask = torch.logical_and(selected_pts_mask, padded_mask)
 
         print(f"Number of points to clone : {selected_pts_mask.sum()}")
         
@@ -464,7 +464,7 @@ class GaussianModel:
         n_init_points = self.get_xyz.shape[0]
         # Extract points that satisfy the gradient condition
         padded_grad = torch.zeros((n_init_points), device="cuda")
-        padded_grad[:grads.shape[0]] = grads.squeeze()
+        padded_grad[:grads.shape[0]] = torch.norm(grads, dim=-1)
         selected_pts_mask = torch.where(padded_grad >= grad_threshold, True, False)
         selected_pts_mask = torch.logical_and(selected_pts_mask,
                                               torch.max(self.get_scaling, dim=1).values > self.percent_dense*scene_extent)
