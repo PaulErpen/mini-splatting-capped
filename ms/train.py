@@ -442,6 +442,7 @@ if __name__ == "__main__":
 
     parser.add_argument("--num_max", type=int, default = None, help="Maximum number of splats in the scene")
     parser.add_argument("--lambda_diff", type=float, default=0.5, help="Weighting the contribution for blur-split and gradient based densification when running into the cap")
+    parser.add_argument("--white_background", action="store_true", default=False)
 
     args = parser.parse_args(sys.argv[1:])
     args.save_iterations.append(args.iterations)
