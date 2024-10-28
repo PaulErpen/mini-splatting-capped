@@ -25,7 +25,7 @@ except ImportError:
     TENSORBOARD_FOUND = False
 
 import numpy as np
-from lpipsPyTorch import lpips
+from lpipsPyTorch.modules.lpips import LPIPS
 from utils.sh_utils import SH2RGB
 
 try:
@@ -81,6 +81,8 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
 
     mask_blur = torch.zeros(gaussians._xyz.shape[0], device='cuda')
     area_max_acum = torch.zeros(gaussians._xyz.shape[0], device='cuda')
+
+    lpips = LPIPS('vgg', '0.1').to('cuda')
     
     for iteration in range(first_iter, opt.iterations + 1):       
         log.append(f"Iteration: {iteration}")
@@ -143,7 +145,7 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                 progress_bar.close()
 
             # Log and save
-            training_report(tb_writer, iteration, Ll1, loss, l1_loss, iter_start.elapsed_time(iter_end), testing_iterations, scene, render_imp, (pipe, background))
+            training_report(tb_writer, iteration, Ll1, loss, l1_loss, iter_start.elapsed_time(iter_end), testing_iterations, scene, render_imp, (pipe, background), lpips)
             if (iteration in saving_iterations):
                 print("\n[ITER {}] Saving Gaussians".format(iteration))
                 scene.save(iteration)
@@ -152,7 +154,7 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                 wandb.log({
                     "train/psnr": psnr(image, gt_image).mean().double(),
                     "train/ssim": ssim(image, gt_image).mean().double(),
-                    "train/lpips": lpips(image, gt_image, net_type='vgg').mean().double(),
+                    "train/lpips": lpips(image, gt_image).mean().double(),
                 }, step=iteration)
 
             n_created, n_deleted = 0, 0
@@ -391,7 +393,7 @@ def prepare_output_and_logger(args):
         print("Tensorboard not available: not logging progress")
     return tb_writer
 
-def training_report(tb_writer, iteration, Ll1, loss, l1_loss, elapsed, testing_iterations, scene : Scene, renderFunc, renderArgs):
+def training_report(tb_writer, iteration, Ll1, loss, l1_loss, elapsed, testing_iterations, scene : Scene, renderFunc, renderArgs, lpips):
     if tb_writer:
         tb_writer.add_scalar('train_loss_patches/l1_loss', Ll1.item(), iteration)
         tb_writer.add_scalar('train_loss_patches/total_loss', loss.item(), iteration)
@@ -425,7 +427,7 @@ def training_report(tb_writer, iteration, Ll1, loss, l1_loss, elapsed, testing_i
                     psnr_test += psnr(image, gt_image).mean().double()
 
                     ssims.append(ssim(image, gt_image))
-                    lpipss.append(lpips(image, gt_image, net_type='vgg'))                    
+                    lpipss.append(lpips(image, gt_image))                    
 
 
                 psnr_test /= len(config['cameras'])
