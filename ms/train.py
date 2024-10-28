@@ -246,11 +246,11 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                         out_pts_list.append(out_pts[indices])
                         gt_list.append(gt[indices])       
 
-                        diff = (n_before - num_sampled)
-                        if diff > 0:
-                            n_deleted = n_deleted + diff
-                        else:
-                            n_created = n_created + diff * -1
+                    diff = (n_before - gaussians._xyz.shape[0])
+                    if diff > 0:
+                        n_deleted = n_deleted + diff
+                    else:
+                        n_created = n_created + diff * -1
 
     
 
