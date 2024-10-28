@@ -213,6 +213,8 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                     
                 if (iteration%args.reprojection_interval==0 
                     and (args.reproject_until_iter is None or iteration<args.reproject_until_iter)):
+
+                    n_before = gaussians._xyz.shape[0]
                     
                     out_pts_list=[]
                     gt_list=[]
@@ -244,6 +246,12 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
 
                         out_pts_list.append(out_pts[indices])
                         gt_list.append(gt[indices])       
+
+                        diff = (n_before - num_sampled)
+                        if diff > 0:
+                            n_deleted = n_deleted + diff
+                        else:
+                            n_created = n_created + diff * -1
 
     
 
