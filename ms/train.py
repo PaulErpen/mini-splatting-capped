@@ -157,7 +157,7 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                 wandb.log({
                     "train/psnr": psnr(image, gt_image).mean().double(),
                     "train/ssim": ssim(image, gt_image).mean().double(),
-                    "train/lpips": lpips(image, gt_image).mean().double(),
+                    # "train/lpips": lpips(image, gt_image).mean().double(),
                 }, step=iteration)
 
             n_created, n_deleted = 0, 0
