@@ -415,6 +415,7 @@ class GaussianModel:
     def densify_and_prune_split(self, max_grad, min_opacity, extent, max_screen_size, mask, n_grad=None):
         grads = self.xyz_gradient_accum / self.denom
         grads[grads.isnan()] = 0.0
+        n_start = self.get_xyz.shape[0]
 
         if n_grad is not None:
             top_grads_index = get_top_k_indices(torch.norm(grads, dim=-1), n_grad)
@@ -426,6 +427,8 @@ class GaussianModel:
         self.densify_and_clone_mask(grads, max_grad, extent, mask_top)
         self.densify_and_split_mask(grads, max_grad, extent, mask, mask_top)
 
+        n_created = self.get_xyz.shape[0] - n_start
+
         assert self.get_xyz.shape[0] <= grads.shape[0] + mask_top.sum() + mask.sum(), f"Densification exceeds maximum number of points {self.get_xyz.shape[0]} > {grads.shape[0]} + {mask_top.sum()} + {mask.sum()}"
 
         prune_mask = (self.get_opacity < min_opacity).squeeze()
@@ -435,9 +438,13 @@ class GaussianModel:
             prune_mask = torch.logical_or(torch.logical_or(prune_mask, big_points_vs), big_points_ws)
         self.prune_points(prune_mask)
 
+        n_deleted = n_start - (self.get_xyz.shape[0] - n_created)
+
         torch.cuda.empty_cache()
 
         self.log.append(f"Number of points after densification : {self.get_xyz.shape[0]}")
+
+        return n_created, n_deleted
 
     def densify_and_clone_mask(self, grads, grad_threshold, scene_extent, mask):
         # Extract points that satisfy the gradient condition

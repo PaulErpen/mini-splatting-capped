@@ -17,6 +17,7 @@ from tqdm import tqdm
 from utils.image_utils import psnr
 from argparse import ArgumentParser, Namespace
 from arguments import ModelParams, PipelineParams, OptimizationParams
+import hashlib
 try:
     from torch.utils.tensorboard import SummaryWriter
     TENSORBOARD_FOUND = True
@@ -27,6 +28,11 @@ import numpy as np
 from lpipsPyTorch import lpips
 from utils.sh_utils import SH2RGB
 
+try:
+    import wandb
+    WANDB_FOUND = True
+except ImportError:
+    WANDB_FOUND = False
 
 def init_cdf_mask(importance, thres=1.0):
     importance = importance.flatten()   
@@ -142,7 +148,14 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                 print("\n[ITER {}] Saving Gaussians".format(iteration))
                 scene.save(iteration)
 
+            if WANDB_FOUND:
+                wandb.log({
+                    "train/psnr": psnr(image, gt_image).mean().double(),
+                    "train/ssim": ssim(image, gt_image).mean().double(),
+                    "train/lpips": lpips(image, gt_image, net_type='vgg').mean().double(),
+                }, step=iteration)
 
+            n_created, n_deleted = 0, 0
 
             # Densification
             if iteration < opt.densify_until_iter:
@@ -184,7 +197,7 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                     size_threshold = 20 if iteration > opt.opacity_reset_interval else None
 
 
-                    gaussians.densify_and_prune_split(opt.densify_grad_threshold, 
+                    n_created, n_deleted = gaussians.densify_and_prune_split(opt.densify_grad_threshold, 
                                                     0.005, scene.cameras_extent, 
                                                     size_threshold, mask_blur, n_grad)
                     mask_blur = torch.zeros(gaussians._xyz.shape[0], device='cuda')
@@ -289,6 +302,8 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                 viewpoint_stack = scene.getTrainCameras().copy()
                 area_max_acum = torch.zeros(gaussians._xyz.shape[0], device='cuda')
 
+                n_deleted = n_deleted + (mask==False).sum()
+
 
             if iteration == args.simp_iteration2:
 
@@ -320,6 +335,13 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                 torch.cuda.empty_cache()
                 area_max_acum = torch.zeros(gaussians._xyz.shape[0], device='cuda')
 
+                n_deleted = n_deleted + (non_prune_mask==False).sum()
+
+            if WANDB_FOUND:
+                    wandb.log({
+                        "n_created": n_created,
+                        "n_deleted": n_deleted,
+                    }, step=iteration)
                 
 
             # Optimizer step
@@ -375,6 +397,11 @@ def training_report(tb_writer, iteration, Ll1, loss, l1_loss, elapsed, testing_i
         tb_writer.add_scalar('train_loss_patches/total_loss', loss.item(), iteration)
         tb_writer.add_scalar('iter_time', elapsed, iteration)
 
+    if WANDB_FOUND:
+        wandb.log({
+            "n_gaussians": scene.gaussians.get_xyz.shape[0],
+        }, step=iteration)
+
     # Report test and samples of training set
     if iteration in testing_iterations:
         torch.cuda.empty_cache()
@@ -418,10 +445,34 @@ def training_report(tb_writer, iteration, Ll1, loss, l1_loss, elapsed, testing_i
                     tb_writer.add_scalar(config['name'] + '/loss_viewpoint - l1_loss', l1_test, iteration)
                     tb_writer.add_scalar(config['name'] + '/loss_viewpoint - psnr', psnr_test, iteration)
 
+                if WANDB_FOUND:
+                    wandb.log({
+                        'test/psnr': psnr_test,
+                        'test/ssim': ssims_test,
+                        'test/lpips': lpipss_test,
+                    }, step=iteration)
+
         if tb_writer:
             tb_writer.add_histogram("scene/opacity_histogram", scene.gaussians.get_opacity, iteration)
             tb_writer.add_scalar('total_points', scene.gaussians.get_xyz.shape[0], iteration)
         torch.cuda.empty_cache()
+
+def init_wandb(wandb_key: str, wandb_project: str, wandb_run_name: str, model_path: str, args):
+    if WANDB_FOUND:
+        wandb.login(key=wandb_key)
+        id = hashlib.md5(wandb_run_name.encode('utf-8')).hexdigest()
+        wandb_run = wandb.init(
+            project=wandb_project,
+            name=wandb_run_name,
+            config=args,
+            dir=model_path,
+            mode="online",
+            id=id,
+            resume=True
+        )
+        return wandb_run
+    else:
+        return None
 
 if __name__ == "__main__":
     # Set up command line argument parser
@@ -451,22 +502,32 @@ if __name__ == "__main__":
     parser.add_argument("--reprojection_interval", type=int, default=5000, help="Interval for depth reprojection of the scene")
     parser.add_argument("--reproject_until_iter", type=int, default=None, help="The iteration until which the depth reprojection is performed")
 
+    parser.add_argument("--wandb_key", type=str, default="", help="The key used to sign into weights & biases logging")
+    parser.add_argument("--wandb_project", type=str, default="")
+    parser.add_argument("--wandb_run_name", type=str, default=None)
+
     args = parser.parse_args(sys.argv[1:])
     args.save_iterations.append(args.iterations)
     args.test_iterations.append(args.iterations)
 
-    print("Optimizing " + args.model_path)
+    wand_run = init_wandb(args.wandb_key, args.wandb_project, args.wandb_run_name, args.model_path, args)
 
-    # Initialize system state (RNG)
-    safe_state(args.quiet)
+    try:
+        print("Optimizing " + args.model_path)
 
-    # Start GUI server, configure and run training
-    network_gui.init(args.ip, args.port)
-    torch.autograd.set_detect_anomaly(args.detect_anomaly)
+        # Initialize system state (RNG)
+        safe_state(args.quiet)
+
+        # Start GUI server, configure and run training
+        network_gui.init(args.ip, args.port)
+        torch.autograd.set_detect_anomaly(args.detect_anomaly)
 
 
-    training(lp.extract(args), op.extract(args), pp.extract(args), args.test_iterations, args.save_iterations, args.checkpoint_iterations, args.start_checkpoint, args.debug_from, args)
+        training(lp.extract(args), op.extract(args), pp.extract(args), args.test_iterations, args.save_iterations, args.checkpoint_iterations, args.start_checkpoint, args.debug_from, args)
 
 
-    # All done
-    print("\nTraining complete.")
+        # All done
+        print("\nTraining complete.")
+    finally:
+        if wand_run is not None:
+            wand_run.finish()
