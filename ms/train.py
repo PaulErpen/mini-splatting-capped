@@ -83,6 +83,9 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
     area_max_acum = torch.zeros(gaussians._xyz.shape[0], device='cuda')
 
     lpips = LPIPS('vgg', '0.1').to('cuda')
+
+    cum_deleted = 0
+    cum_created = 0
     
     for iteration in range(first_iter, opt.iterations + 1):       
         log.append(f"Iteration: {iteration}")
@@ -340,10 +343,12 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                 n_deleted = n_deleted + (non_prune_mask==False).sum()
 
             if WANDB_FOUND:
-                    wandb.log({
-                        "n_created": n_created,
-                        "n_deleted": n_deleted,
-                    }, step=iteration)
+                cum_deleted = cum_deleted + n_deleted
+                cum_created = cum_created + n_created
+                wandb.log({
+                    "cum_deleted": cum_deleted,
+                    "cum_created": cum_created,
+                }, step=iteration)
                 
 
             # Optimizer step
