@@ -246,13 +246,6 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                         out_pts_list.append(out_pts[indices])
                         gt_list.append(gt[indices])       
 
-                    if n_before > gaussians._xyz.shape[0]:
-                        n_deleted = n_deleted + (n_before - gaussians._xyz.shape[0])
-                    else:
-                        n_created = n_created + (gaussians._xyz.shape[0] - n_before)
-
-    
-
                     out_pts_merged=torch.cat(out_pts_list)
                     gt_merged=torch.cat(gt_list)
 
@@ -263,6 +256,10 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                     torch.cuda.empty_cache()
                     viewpoint_stack = scene.getTrainCameras().copy()
 
+                    if n_before > gaussians._xyz.shape[0]:
+                        n_deleted = n_deleted + (n_before - gaussians._xyz.shape[0])
+                    else:
+                        n_created = n_created + (gaussians._xyz.shape[0] - n_before)
 
 
             if iteration == simp_iteration1:
