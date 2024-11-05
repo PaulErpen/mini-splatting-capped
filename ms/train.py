@@ -457,8 +457,8 @@ def training_report(tb_writer, iteration, Ll1, loss, l1_loss, elapsed, testing_i
 
                 if WANDB_FOUND:
                     wandb.log({
-                        f'{config['name']}/psnr': psnr_test,
-                        f'{config['name']}/ssim': ssims_test,
+                        f"{config['name']}/psnr": psnr_test,
+                        f"{config['name']}/ssim": ssims_test,
                         # 'test/lpips': lpipss_test,
                     }, step=iteration)
 
