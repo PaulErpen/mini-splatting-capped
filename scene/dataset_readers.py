@@ -129,7 +129,15 @@ def storePly(path, xyz, rgb):
     ply_data = PlyData([vertex_element])
     ply_data.write(path)
 
-def readColmapSceneInfo(path, images, eval, llffhold=8):
+def subsamplePointCloud(n_start_gaussians: int, pcd: BasicPointCloud | None):
+    if n_start_gaussians is not None and pcd is not None:
+        print("Subsampling point cloud")
+        np.random.seed(123)
+        chosen_points = np.random.choice(pcd.points.shape[0], n_start_gaussians, replace=False)
+        return BasicPointCloud(pcd.points[chosen_points], pcd.colors[chosen_points], pcd.normals[chosen_points])
+    return pcd
+
+def readColmapSceneInfo(path, images, eval, n_start_gaussians, llffhold=8):
     try:
         cameras_extrinsic_file = os.path.join(path, "sparse/0", "images.bin")
         cameras_intrinsic_file = os.path.join(path, "sparse/0", "cameras.bin")
@@ -168,6 +176,10 @@ def readColmapSceneInfo(path, images, eval, llffhold=8):
         pcd = fetchPly(ply_path)
     except:
         pcd = None
+    
+    pcd = subsamplePointCloud(n_start_gaussians, pcd)
+
+    assert pcd is not None, "The point-cloud cannot be None after initialization!"
 
     scene_info = SceneInfo(point_cloud=pcd,
                            train_cameras=train_cam_infos,
@@ -247,11 +259,9 @@ def readNerfSyntheticInfo(path, n_start_gaussians, white_background, eval, exten
     except:
         pcd = None
 
-    if n_start_gaussians is not None and pcd is not None:
-        print("Subsampling point cloud")
-        np.random.seed(123)
-        chosen_points = np.random.choice(pcd.points.shape[0], n_start_gaussians, replace=False)
-        pcd = BasicPointCloud(pcd.points[chosen_points], pcd.colors[chosen_points], pcd.normals[chosen_points])
+    pcd = subsamplePointCloud(n_start_gaussians, pcd)
+
+    assert pcd is not None, "The point-cloud cannot be None after initialization!"
 
     scene_info = SceneInfo(point_cloud=pcd,
                            train_cameras=train_cam_infos,
