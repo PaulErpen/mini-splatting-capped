@@ -536,6 +536,7 @@ if __name__ == "__main__":
     parser.add_argument("--use_early_stopping", default=False, action="store_true")
     parser.add_argument("--early_stopping_grace_periods", type=str)
     parser.add_argument("--start_early_stopping_iteration", type=int)
+    parser.add_argument("--n_patience_epochs", type=int, default=3)
 
     args = parser.parse_args(sys.argv[1:])
     args.save_iterations.append(args.iterations)

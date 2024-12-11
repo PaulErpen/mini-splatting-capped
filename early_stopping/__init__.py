@@ -29,6 +29,7 @@ class EarlyStoppingHandler:
         start_early_stopping_iteration: int,
         grace_periods: List[GracePeriod],
         early_stopping_check_interval: int,
+        n_patience_epochs: int,
     ) -> None:
         self.use_early_stopping = use_early_stopping
         self.start_early_stopping_iteration = start_early_stopping_iteration
@@ -36,6 +37,7 @@ class EarlyStoppingHandler:
         self.early_stopping_check_interval = early_stopping_check_interval
         self.best_ssim = -1.0
         self.n_epochs_without_improvement = 0
+        self.n_patience_epochs = n_patience_epochs
 
     def stop_early(
         self,
