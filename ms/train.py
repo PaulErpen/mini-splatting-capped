@@ -92,7 +92,8 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
         use_early_stopping=args.use_early_stopping,
         start_early_stopping_iteration=args.start_early_stopping_iteration,
         grace_periods=parse_grace_periods(args.early_stopping_grace_periods),
-        early_stopping_check_interval=len(scene.getTrainCameras())
+        early_stopping_check_interval=len(scene.getTrainCameras()),
+        n_patience_epochs=args.n_patience_epochs
     )
     
     for iteration in range(first_iter, opt.iterations + 1):       
