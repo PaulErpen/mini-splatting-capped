@@ -61,7 +61,9 @@ class EarlyStoppingHandler:
         is_in_grace_period = False
 
         for grace_period in self.grace_periods:
-            if step % grace_period.frequency < grace_period.length:
+            if (step > grace_period.frequency) and (
+                step % grace_period.frequency < grace_period.length
+            ):
                 is_in_grace_period = True
 
         if is_in_grace_period:
