@@ -30,6 +30,8 @@ class EarlyStoppingHandler:
         grace_periods: List[GracePeriod],
         early_stopping_check_interval: int,
         n_patience_epochs: int,
+        device="cuda",
+        use_wandb=True,
     ) -> None:
         self.use_early_stopping = use_early_stopping
         self.start_early_stopping_iteration = start_early_stopping_iteration
@@ -38,6 +40,8 @@ class EarlyStoppingHandler:
         self.best_ssim = -1.0
         self.n_epochs_without_improvement = 0
         self.n_patience_epochs = n_patience_epochs
+        self.device = device
+        self.use_wandb = use_wandb
 
     def stop_early(
         self,
@@ -57,7 +61,7 @@ class EarlyStoppingHandler:
         is_in_grace_period = False
 
         for grace_period in self.grace_periods:
-            if iter % grace_period.frequency < grace_period.length:
+            if step % grace_period.frequency < grace_period.length:
                 is_in_grace_period = True
 
         if is_in_grace_period:
@@ -67,13 +71,14 @@ class EarlyStoppingHandler:
 
         for camera in test_cameras:
             image = torch.clamp(render_func(camera), 0.0, 1.0)
-            gt_image = torch.clamp(camera.original_image.to("cuda"), 0.0, 1.0)
+            gt_image = torch.clamp(camera.original_image.to(self.device), 0.0, 1.0)
 
             ssims.append(ssim(image, gt_image))
 
         new_ssim = torch.tensor(ssims).mean().detach().cpu().item()
 
-        wandb.log({"early_stopping_test/ssim": new_ssim})
+        if self.use_wandb:
+            wandb.log({"early_stopping_test/ssim": new_ssim})
 
         if new_ssim > (self.best_ssim + 0.0001):
             self.best_ssim = new_ssim
