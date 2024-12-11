@@ -7,8 +7,8 @@ import wandb
 
 @dataclass
 class GracePeriod:
-    frequency: int
-    length: int
+    start: int
+    end: int
 
 
 def parse_grace_periods(arg: str | None) -> List[GracePeriod]:
@@ -61,9 +61,7 @@ class EarlyStoppingHandler:
         is_in_grace_period = False
 
         for grace_period in self.grace_periods:
-            if (step > grace_period.frequency) and (
-                step % grace_period.frequency < grace_period.length
-            ):
+            if (grace_period.start <= step) and (step < grace_period.end):
                 is_in_grace_period = True
 
         if is_in_grace_period:
