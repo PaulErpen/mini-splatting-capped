@@ -172,7 +172,7 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
             if early_stopping_handler.stop_early(
                 step=iteration,
                 test_cameras=scene.getTestCameras(),
-                render_func=lambda camera: render_imp(camera, scene.gaussians, (pipe, background))
+                render_func=lambda camera: render_imp(camera, scene.gaussians, pipe, background)["render"]
             ):
                 scene.save(iteration)
                 break
