@@ -56,8 +56,8 @@ class EarlyStoppingHandler:
 
         is_in_grace_period = False
 
-        for grace_interval, grace_period in self.grace_periods:
-            if iter % grace_interval < grace_period:
+        for grace_period in self.grace_periods:
+            if iter % grace_period.frequency < grace_period.length:
                 is_in_grace_period = True
 
         if is_in_grace_period:
