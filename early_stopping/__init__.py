@@ -55,7 +55,7 @@ class EarlyStoppingHandler:
 
         if step % self.early_stopping_check_interval != 0:
             return False
-        
+
         ssims = []
 
         for camera in test_cameras:
@@ -82,14 +82,18 @@ class EarlyStoppingHandler:
             return False
 
         if new_ssim > (self.best_ssim + 0.0001):
+            print("\nNew best SSIM {new_ssim} > {self.best_ssim}")
             self.best_ssim = new_ssim
             self.n_epochs_without_improvement = 0
         else:
             self.n_epochs_without_improvement = self.n_epochs_without_improvement + 1
+            print(
+                "\nSSIM did not meaningfully improve for {self.n_epochs_without_improvement}: {new_ssim} < {self.best_ssim} + 0.0001"
+            )
 
         if self.n_epochs_without_improvement > self.n_patience_epochs:
             print(
-                f"No improvement in SSIM for {self.n_epochs_without_improvement}, stopping training at step {step}"
+                f"\nNo improvement in SSIM for {self.n_epochs_without_improvement}, stopping training at step {step}"
             )
             return True
 
