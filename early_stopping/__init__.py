@@ -51,6 +51,19 @@ class EarlyStoppingHandler:
     ) -> bool:
         if not self.use_early_stopping:
             return False
+        
+        ssims = []
+
+        for camera in test_cameras:
+            image = torch.clamp(render_func(camera), 0.0, 1.0)
+            gt_image = torch.clamp(camera.original_image.to(self.device), 0.0, 1.0)
+
+            ssims.append(ssim(image, gt_image))
+
+        new_ssim = torch.tensor(ssims).mean().detach().cpu().item()
+
+        if self.use_wandb:
+            wandb.log({"early_stopping_test/ssim": new_ssim})
 
         if step % self.early_stopping_check_interval != 0:
             return False
@@ -66,19 +79,6 @@ class EarlyStoppingHandler:
 
         if is_in_grace_period:
             return False
-
-        ssims = []
-
-        for camera in test_cameras:
-            image = torch.clamp(render_func(camera), 0.0, 1.0)
-            gt_image = torch.clamp(camera.original_image.to(self.device), 0.0, 1.0)
-
-            ssims.append(ssim(image, gt_image))
-
-        new_ssim = torch.tensor(ssims).mean().detach().cpu().item()
-
-        if self.use_wandb:
-            wandb.log({"early_stopping_test/ssim": new_ssim})
 
         if new_ssim > (self.best_ssim + 0.0001):
             self.best_ssim = new_ssim
