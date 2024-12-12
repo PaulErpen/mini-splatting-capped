@@ -173,7 +173,6 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                 step=iteration,
                 test_cameras=scene.getTestCameras(),
                 render_func=lambda camera: render_imp(camera, scene.gaussians, pipe, background)["render"],
-                save_best=lambda: scene.save(iteration)
             ):
                 scene.save(iteration)
                 break

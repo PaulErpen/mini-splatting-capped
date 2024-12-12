@@ -49,7 +49,6 @@ class EarlyStoppingHandler:
         step: int,
         test_cameras: List[Any],
         render_func: Callable,
-        save_best: Callable
     ) -> bool:
         if not self.use_early_stopping:
             return False
@@ -86,7 +85,6 @@ class EarlyStoppingHandler:
             print(f"\nNew best SSIM {new_ssim} > {self.best_ssim}")
             self.best_ssim = new_ssim
             self.n_epochs_without_improvement = 0
-            save_best()
         else:
             self.n_epochs_without_improvement = self.n_epochs_without_improvement + 1
             print(
