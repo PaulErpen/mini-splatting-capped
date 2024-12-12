@@ -55,7 +55,7 @@ class EarlyStoppingHandler:
 
         if step % self.early_stopping_check_interval != 0:
             return False
-        
+
         if step < self.start_early_stopping_iteration:
             return False
 
@@ -70,7 +70,7 @@ class EarlyStoppingHandler:
         new_ssim = torch.tensor(ssims).mean().detach().cpu().item()
 
         if self.use_wandb:
-            wandb.log({"early_stopping_test/ssim": new_ssim})
+            wandb.log({"early_stopping_test/ssim": new_ssim}, step=step)
 
         is_in_grace_period = False
 
