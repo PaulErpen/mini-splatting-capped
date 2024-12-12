@@ -43,7 +43,10 @@ class EarlyStoppingTest(unittest.TestCase):
         )
 
         handler.stop_early(
-            step=1, test_cameras=[], render_func=lambda x: torch.rand_like(800, 800, 3)
+            step=1,
+            test_cameras=[],
+            render_func=lambda x: torch.rand_like(800, 800, 3),
+            save_best=lambda: print("Saving..."),
         )
 
     def test_given_a_model_that_does_not_improve__when_checking_for_early_stop_14_times__then_return_true(
@@ -65,6 +68,7 @@ class EarlyStoppingTest(unittest.TestCase):
                     step=i,
                     test_cameras=self.test_cameras,
                     render_func=lambda x: torch.ones_like(x.original_image),
+                    save_best=lambda: print("Saving..."),
                 )
             )
 
@@ -73,6 +77,7 @@ class EarlyStoppingTest(unittest.TestCase):
                 step=14,
                 test_cameras=self.test_cameras,
                 render_func=lambda x: torch.ones_like(x.original_image),
+                save_best=lambda: print("Saving..."),
             )
         )
 
@@ -95,6 +100,7 @@ class EarlyStoppingTest(unittest.TestCase):
                     step=i,
                     test_cameras=self.test_cameras,
                     render_func=lambda x: torch.ones_like(x.original_image),
+                    save_best=lambda: print("Saving..."),
                 )
             )
 
@@ -103,6 +109,7 @@ class EarlyStoppingTest(unittest.TestCase):
                 step=30,
                 test_cameras=self.test_cameras,
                 render_func=lambda x: torch.ones_like(x.original_image),
+                save_best=lambda: print("Saving..."),
             )
         )
 
@@ -125,6 +132,7 @@ class EarlyStoppingTest(unittest.TestCase):
                     step=i,
                     test_cameras=self.test_cameras,
                     render_func=lambda x: torch.ones_like(x.original_image),
+                    save_best=lambda: print("Saving..."),
                 )
             )
 
@@ -133,6 +141,7 @@ class EarlyStoppingTest(unittest.TestCase):
                 step=28,
                 test_cameras=self.test_cameras,
                 render_func=lambda x: torch.ones_like(x.original_image),
+                save_best=lambda: print("Saving..."),
             )
         )
 
@@ -155,6 +164,7 @@ class EarlyStoppingTest(unittest.TestCase):
                     step=i,
                     test_cameras=self.test_cameras,
                     render_func=lambda x: torch.ones_like(x.original_image),
+                    save_best=lambda: print("Saving..."),
                 )
             )
 
@@ -163,6 +173,7 @@ class EarlyStoppingTest(unittest.TestCase):
                 step=28,
                 test_cameras=self.test_cameras,
                 render_func=lambda x: torch.ones_like(x.original_image),
+                save_best=lambda: print("Saving..."),
             )
         )
 
@@ -185,6 +196,7 @@ class EarlyStoppingTest(unittest.TestCase):
                     step=i,
                     test_cameras=self.test_cameras,
                     render_func=lambda x: torch.ones_like(x.original_image),
+                    save_best=lambda: print("Saving..."),
                 )
             )
 
@@ -193,6 +205,7 @@ class EarlyStoppingTest(unittest.TestCase):
                 step=28,
                 test_cameras=self.test_cameras,
                 render_func=lambda x: torch.ones_like(x.original_image),
+                save_best=lambda: print("Saving..."),
             )
         )
 
