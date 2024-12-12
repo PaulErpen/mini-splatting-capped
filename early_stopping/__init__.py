@@ -43,6 +43,7 @@ class EarlyStoppingHandler:
         self.device = device
         self.use_wandb = use_wandb
 
+    @torch.no_grad()
     def stop_early(
         self,
         step: int,
