@@ -51,6 +51,9 @@ class EarlyStoppingHandler:
     ) -> bool:
         if not self.use_early_stopping:
             return False
+
+        if step % self.early_stopping_check_interval != 0:
+            return False
         
         ssims = []
 
@@ -64,9 +67,6 @@ class EarlyStoppingHandler:
 
         if self.use_wandb:
             wandb.log({"early_stopping_test/ssim": new_ssim})
-
-        if step % self.early_stopping_check_interval != 0:
-            return False
 
         if step < self.start_early_stopping_iteration:
             return False
