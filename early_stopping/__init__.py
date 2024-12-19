@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, Callable, List
+from typing import Any, Callable, List, Optional
 import torch
 from utils.loss_utils import ssim
 import wandb
@@ -11,7 +11,7 @@ class GracePeriod:
     end: int
 
 
-def parse_grace_periods(arg: str | None) -> List[GracePeriod]:
+def parse_grace_periods(arg: Optional[str]) -> List[GracePeriod]:
     if arg is None:
         return []
 

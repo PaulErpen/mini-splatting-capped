@@ -12,7 +12,7 @@
 import os
 import sys
 from PIL import Image
-from typing import NamedTuple
+from typing import NamedTuple, Optional
 from scene.colmap_loader import read_extrinsics_text, read_intrinsics_text, qvec2rotmat, \
     read_extrinsics_binary, read_intrinsics_binary, read_points3D_binary, read_points3D_text
 from utils.graphics_utils import getWorld2View2, focal2fov, fov2focal
@@ -129,7 +129,7 @@ def storePly(path, xyz, rgb):
     ply_data = PlyData([vertex_element])
     ply_data.write(path)
 
-def subsamplePointCloud(n_start_gaussians: int, pcd: BasicPointCloud | None):
+def subsamplePointCloud(n_start_gaussians: int, pcd: Optional[BasicPointCloud]):
     if n_start_gaussians is not None and pcd is not None:
         print("Subsampling point cloud")
         choose_n = min(n_start_gaussians, pcd.points.shape[0])
