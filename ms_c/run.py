@@ -138,12 +138,12 @@ def compress(dataset : ModelParams, iteration : int, pipeline : PipelineParams, 
 
         # voxlize
         pos=gaussians._xyz
-        rgb=SH2RGB(gaussians._features_dc+0)[:,0]
         pos_voxlized=(pos-pos.min())/(pos.max()-pos.min())
         pos_voxlized=torch.round(pos_voxlized*(2**depth-1))
         pos_voxlized, pos_idx = np.unique(pos_voxlized.detach().cpu().numpy(), axis=0, return_index=True)
 
         pos_remain = pos[pos_idx]
+        rgb=SH2RGB(gaussians._features_dc+0)[:,0]
         rgb=rgb[pos_idx]
 
         pos_voxlized=(pos_remain-pos_remain.min())/(pos_remain.max()-pos_remain.min())

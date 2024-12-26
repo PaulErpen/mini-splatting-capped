@@ -34,7 +34,7 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
     first_iter = 0
     tb_writer = prepare_output_and_logger(dataset)
 
-    gaussians = GaussianModel(sh_degree=0)
+    gaussians = GaussianModel(sh_degree=dataset.sh_degree)
 
     scene = Scene(dataset, gaussians)
     gaussians.training_setup(opt)
